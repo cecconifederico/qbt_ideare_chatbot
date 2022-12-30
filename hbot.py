@@ -16,6 +16,7 @@ import os.path
 import pickle
 import re
 import string
+from operator import itemgetter
 
 
 def clear_input_string(s):
@@ -64,32 +65,78 @@ def find_root_indexes(input_list,base_list):
      return [input_root_index,base_root_index]    
  
 def pattern_match_1(index1,index2,l1,l2):
-    if l1[index1]==l2[index2]:
+    if l1[index1][0]==l2[index2][0]:
         return 100
     else:
         return 0
     
+def pattern_match_2(index1,index2,l1,l2):
+    v=0
+    for i in l1[index1:]:
+     for j in l2[index2:]:
+         if i[0]==j[0]:
+             v+=25
+    return v         
+
+def bot_engine(input_string):
+   q_string = input_string
+   q_string = clear_input_string(q_string)
+   q_doc=nlp(q_string)
+   q_lemma=create_lemma_string(q_doc)
+   lexical_data={}
+   create_lexical_input(q_string,q_doc,0,0,lexical_data)
+
+   for lexical_key in lexical_entry:
+       lexical_value=lexical_entry[lexical_key]
+       input_value=lexical_input['le_0_0']
+       #print(lexical_value[0])
+       r_ids=find_root_indexes(input_value[1],lexical_value[1])
+       r_value_1=pattern_match_1(r_ids[0],r_ids[1],input_value[1],lexical_value[1])
+       #print(r_value_1)
+       r_value_2=pattern_match_2(r_ids[0],r_ids[1],input_value[1],lexical_value[1])
+       r_value=r_value_1+r_value_2
+       if r_value > 0:
+        output_list_tag_rank.append([lexical_key,lexical_value[0],r_value])
+
+        
 nlp = it_core_news_sm.load()
 
 file_to_read = open("dict.pkl", "rb")
 lexical_entry = pickle.load(file_to_read)
 lexical_input={}
+output_list_tag_rank=[]
 
-q_string = 'vorrei entrare'
-q_string = clear_input_string(q_string)
-q_doc=nlp(q_string)
-q_lemma=create_lemma_string(q_doc)
-lexical_data={}
-create_lexical_input(q_string,q_doc,0,0,lexical_data)
+#bot_engine('vorrei inserire le anagrafiche')
+#bot_engine("vorrei modificare  elenco delle anagrafiche")
 
-for lexical_key in lexical_entry:
-    lexical_value=lexical_entry[lexical_key]
-    input_value=lexical_input['le_0_0']
-    print(lexical_value[0])
-    r_ids=find_root_indexes(input_value[1],lexical_value[1])
-    r_value_1=pattern_match_1(r_ids[0],r_ids[1],input_value[1],lexical_value[1])
-    print(r_value_1)
-    
+sg.theme('BluePurple')
+
+layout = [[sg.Text('BOT'), sg.Text(size=(60,30), key='-OUTPUT-')],
+          [sg.Input(key='-IN-')],
+          [sg.Button('Help'), sg.Button('Exit')]]
+
+window = sg.Window('Pattern 2B', layout)
+
+while True:  # Event Loop
+    event, values = window.read()
+    print(event, values)
+    if event == sg.WIN_CLOSED or event == 'Exit':
+        break
+    if event == 'Help':
+        # Update the "output" text element to be the value of "input" element
+        # window['-OUTPUT-'].update(values['-IN-'])
+        output_list_tag_rank=[]
+        bot_engine(values['-IN-'])
+        output_list_tag_rank=sorted(output_list_tag_rank, key=itemgetter(2),reverse=True)
+        listToStr=''
+        for k in output_list_tag_rank:
+            riga = ' '.join([str(elem) for elem in k])
+            listToStr=listToStr + riga + '\n'
+        window['-OUTPUT-'].update(listToStr)
+
+window.close()
+
+
     
     
     
